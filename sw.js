@@ -1,6 +1,6 @@
 /* Offline-Speicher: App und Bausteine liegen im Gerät. Erst aus dem Netz (immer der neueste Stand), ohne Netz aus dem Speicher.
    Häuser (.glb) kommen per Datei und werden hier nie gespeichert. */
-const STAND = "scv-2";
+const STAND = "scv-3";
 const DATEIEN = [
   "./", "index.html", "app.js", "buehne.js", "speicher.js", "ar.js", "messen.js", "stil.css", "manifest.webmanifest",
   "symbol.svg", "symbol-180.png", "symbol-512.png",

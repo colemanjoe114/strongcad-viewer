@@ -490,6 +490,20 @@ try { new ResizeObserver(() => { mess(); B.groesse(W, H); render(); }).observe(b
 mess(); B.groesse(W, H);
 
 /* ---------- Start ---------- */
+/* Haus per Link (WhatsApp): …/#h=<Adresse der verschlüsselten Datei>&k=<Schlüssel>. Alles nach „#“ bleibt im Gerät – weder
+   GitHub noch der Ablage-Server sehen den Schlüssel. Datei = 12 Byte IV + AES-GCM-Daten (umwandler/verschluesseln.mjs). */
+async function holeVerschluesselt(url, schluessel) {
+  const roh = await (await holeAdresse(url)).arrayBuffer();
+  zeigeLaden(0.2, "Haus wird entschlüsselt …");
+  const b64 = schluessel.replace(/-/g, "+").replace(/_/g, "/");
+  const k = Uint8Array.from(atob(b64 + "=".repeat((4 - b64.length % 4) % 4)), (c) => c.charCodeAt(0));
+  const key = await crypto.subtle.importKey("raw", k, "AES-GCM", false, ["decrypt"]);
+  let klar;
+  try { klar = await crypto.subtle.decrypt({ name: "AES-GCM", iv: new Uint8Array(roh, 0, 12) }, key, new Uint8Array(roh, 12)); }
+  catch (f) { throw new Error("der Schlüssel im Link passt nicht zur Datei – bitte den ganzen Link verwenden"); }
+  return new Blob([klar], { type: "model/gltf-binary" });
+}
+
 async function holeAdresse(url) {
   zeigeLaden(0.02, "Haus wird geladen …");
   const r = await fetch(url);
@@ -523,7 +537,11 @@ if (MESSEN) {
   render(); zeigeListe();
   /* Haus.html (Viewer + Haus in einer Datei, umwandler/haus_html.py): das Haus steckt als Base64 in <script id="haus-glb"> */
   const eingebettet = document.getElementById("haus-glb");
-  if (eingebettet) {
+  const LINK = new URLSearchParams(location.hash.slice(1));
+  if (LINK.get("h") && LINK.get("k")) {
+    holeVerschluesselt(LINK.get("h"), LINK.get("k")).then((blob) => oeffne({ blob }))
+      .catch((f) => zeigeFehler("Das Haus aus dem Link ließ sich nicht öffnen: " + (f && f.message ? f.message : f) + ". Vielleicht wurde es entfernt oder der Link ist unvollständig."));
+  } else if (eingebettet) {
     zeigeLaden(0.05, "Haus wird gelesen …");
     fetch("data:model/gltf-binary;base64," + eingebettet.textContent.trim())
       .then((r) => r.blob())
