@@ -51,7 +51,9 @@ app.innerHTML =
   '<div class="karte" hidden role="dialog" aria-label="Bauteil"></div>' +
   '<section class="start" aria-label="Start"><h1>StrongCAD Viewer</h1><p class="sub">Haus ansehen, hineingehen, im Raum zeigen.</p>' +
   '<button class="gross" type="button" data-a="waehlen">Haus öffnen</button>' +
-  '<input class="datei" type="file" accept=".glb,model/gltf-binary" hidden>' +
+  /* ohne accept-Filter: das iPhone kennt die Endung .glb nicht und graut solche Dateien in der Auswahl sonst aus
+     (am iPhone ließ sich keine Datei öffnen). Ob es ein Haus ist, prüft glbKopf() nach der Auswahl. */
+  '<input class="datei" type="file" hidden>' +
   (T ? '<p class="shint">Aus WhatsApp oder Mail: Teilen › In Dateien sichern, dann hier öffnen.</p>'
      : '<button class="ablage" type="button" data-a="waehlen">Datei hierher ziehen</button>') +
   '<div class="laden" hidden><div class="lt"></div><div class="balken"><i></i></div></div>' +
@@ -519,7 +521,15 @@ if (MESSEN) {
   })();
 } else {
   render(); zeigeListe();
-  if (Q.get("datei")) {
+  /* Haus.html (Viewer + Haus in einer Datei, umwandler/haus_html.py): das Haus steckt als Base64 in <script id="haus-glb"> */
+  const eingebettet = document.getElementById("haus-glb");
+  if (eingebettet) {
+    zeigeLaden(0.05, "Haus wird gelesen …");
+    fetch("data:model/gltf-binary;base64," + eingebettet.textContent.trim())
+      .then((r) => r.blob())
+      .then((blob) => oeffne({ blob }))
+      .catch((f) => zeigeFehler("Das Haus in dieser Datei ließ sich nicht lesen: " + (f && f.message ? f.message : f)));
+  } else if (Q.get("datei")) {
     holeAdresse(Q.get("datei")).then((blob) => oeffne({ blob })).catch((f) => zeigeFehler("Das Haus ließ sich nicht laden: " + f.message));
   }
   if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) {
