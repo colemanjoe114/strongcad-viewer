@@ -1,5 +1,6 @@
 /* StrongCAD Viewer – Bedienung nach Entwurf A "Bühne" (teil-a.html), mit echtem 3D.
-   Abläufe: 1 Start · 2 Ansicht · 3 Ebenen · 4 Bauteil · 5 Hineingehen · 6 Fotos · 7 AR (nur iPhone/iPad). */
+   Abläufe: 1 Start · 2 Ansicht · 3 Ebenen · 4 Bauteil · 5 Hineingehen (Raum wählen, dort gehen, Bild speichern) · 7 AR (nur iPhone/iPad).
+   Die früheren „Fotos“ sind im Hineingehen aufgegangen: jeder Raum mit Vorschaubild, unten eine Leiste zum Wechseln. */
 import { erzeugeBuehne, glbKopf, KeinHaus } from "./buehne.js";
 import * as Speicher from "./speicher.js";
 import { istIOS, baueUsdz, oeffneQuickLook } from "./ar.js";
@@ -39,7 +40,6 @@ const IC = {
 const HINT = {
   modell: T ? "Ein Finger dreht, zwei Finger zoomen" : "Maus ziehen dreht, Rad zoomt",
   innen: T ? "Ziehen = umsehen · Antippen = dorthin gehen" : "Maus ziehen = umsehen · Klick = dorthin gehen · Pfeiltasten = gehen",
-  foto: T ? "Ziehen = umsehen" : "Maus ziehen = umsehen",
 };
 const ANS = [["aussen", "Außen", "Außen"], ["oben", "Von oben", "Oben"], ["offen", "Erdgeschoss offen", "EG offen"]];   /* lang, kurz (Handy/schmal) */
 const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -62,20 +62,18 @@ app.innerHTML =
   '<div class="kopf" data-k="modell" hidden><button class="pille" type="button" data-a="start">' + IC.zur + "<span>Haus wechseln</span></button>" +
   '<span class="pille titel"></span>' +
   '<div class="seg" role="group" aria-label="Ansicht">' + ANS.map((a) => '<button type="button" data-a="ans:' + a[0] + '"><span class="lang">' + a[1] + '</span><span class="kurz">' + a[2] + "</span></button>").join("") + "</div></div>" +
-  '<div class="kopf" data-k="innen" hidden><button class="pille" type="button" data-a="draussen">' + IC.zur + "<span>Nach draußen</span></button></div>" +
-  '<div class="kopf" data-k="foto" hidden><button class="pille" type="button" data-a="zumodell">' + IC.zur + "<span>Zurück zum Modell</span></button>" +
+  '<div class="kopf" data-k="innen" hidden><button class="pille" type="button" data-a="draussen">' + IC.zur + "<span>Nach draußen</span></button>" +
   '<button class="pille rechts" type="button" data-a="speichern">' + IC.sich + "<span>Bild speichern</span></button></div>" +
   '<div class="hinweis" hidden><span class="ht"></span><button class="x" type="button" data-a="hint" aria-label="Hinweis schließen">' + IC.x + "</button></div>" +
   '<div class="leiste" data-k="modell" hidden>' +
   '<button class="lk" type="button" data-a="blatt:ebenen" aria-pressed="false">' + IC.eb + "<span>Ebenen</span></button>" +
-  '<button class="lk" type="button" data-a="innen">' + IC.tuer + "<span>Hineingehen</span></button>" +
-  '<button class="lk" type="button" data-a="blatt:fotos" aria-pressed="false">' + IC.cam + "<span>Fotos</span></button>" +
+  '<button class="lk" type="button" data-a="blatt:raeume" aria-pressed="false">' + IC.tuer + "<span>Hineingehen</span></button>" +
   (AR ? '<button class="lk" type="button" data-a="blatt:ar" aria-pressed="false">' + IC.ar + "<span>AR</span></button>" : "") + "</div>" +
-  '<div class="leiste fuss" data-k="foto" hidden></div>' +
+  '<div class="leiste fuss" data-k="innen" hidden></div>' +
   '<div class="blatt" data-b="ebenen" role="dialog" aria-label="Ebenen"><div class="bk"><div class="bt">Ebenen</div><button class="x" type="button" data-a="zu" aria-label="Schließen">' + IC.x + '</button></div><div class="chips"></div></div>' +
-  '<div class="blatt" data-b="fotos" role="dialog" aria-label="Fotos"><div class="bk"><div class="bt">Fotos</div><button class="x" type="button" data-a="zu" aria-label="Schließen">' + IC.x + '</button></div><div class="fliste"></div></div>' +
+  '<div class="blatt" data-b="raeume" role="dialog" aria-label="Räume"><div class="bk"><div class="bt">Räume</div><button class="x" type="button" data-a="zu" aria-label="Schließen">' + IC.x + '</button></div><div class="fliste"></div></div>' +
   '<div class="blatt" data-b="ar" role="dialog" aria-label="Im Raum ansehen"><div class="bk"><div class="bt">Im Raum ansehen</div><button class="x" type="button" data-a="zu" aria-label="Schließen">' + IC.x + "</button></div>" +
-  '<p class="artext">Öffnet die Kamera. Das Haus steht zuerst klein auf dem Tisch, mit zwei Fingern bis 1:1 vergrößern. Ohne Garten und Möbel.</p>' +
+  '<p class="artext">Öffnet die Kamera. Das Haus steht zuerst klein auf dem Tisch, mit zwei Fingern bis 1:1 vergrößern. Mit Möbeln und Terrasse, ohne Nebengebäude und Bäume.</p>' +
   '<button class="gross" type="button" data-a="kamera">Kamera öffnen</button></div>' +
   '<div class="toast" hidden role="status"></div></div>';
 
@@ -84,7 +82,7 @@ const w = $(".w"), bue = $(".buehne"), marke = $(".marke"), ring = $(".ring"), k
   toastEl = $(".toast"), start = $(".start"), dateiFeld = $(".datei"), laden = $(".laden"), fehlerEl = $(".fehler"), probe = $(".messprobe");
 
 const B = erzeugeBuehne(bue, { mobil: T, schatten: MESSEN === "brille" || MESSEN === "handy" ? 2048 : MESSEN === "rechner" ? 4096 : undefined });
-const st = { modus: "start", ans: "aussen", blatt: "", sel: null, hint: false, foto: 0, name: "", eintrag: null, fotos: {}, raeume: [], vorher: null, usdz: null, beschaeftigt: false };
+const st = { modus: "start", ans: "aussen", blatt: "", sel: null, hint: false, raum: -1, name: "", eintrag: null, fotos: {}, raeume: [], vorher: null, usdz: null, beschaeftigt: false };
 window.scv = { B, st };   /* nur für die eigene Prüfung (kopfloser Edge) */
 
 /* ---------- Hilfen ---------- */
@@ -126,7 +124,7 @@ function render() {
     c.setAttribute("aria-pressed", String(e.an));
     c.setAttribute("aria-disabled", String(!!e.eltern && !e.eltern.an));
   });
-  $$(".fuss .lk").forEach((b) => b.classList.toggle("on", b.dataset.a === "foto:" + st.foto));
+  $$(".fuss .lk").forEach((b) => { const an = b.dataset.a === "raum:" + st.raum; b.classList.toggle("on", an); b.setAttribute("aria-current", an ? "true" : "false"); });
   const titel = $(".pille.titel"); if (titel) titel.textContent = st.name;
   const zeigeKarte = st.modus === "modell" && !!st.sel;
   karte.hidden = !zeigeKarte; marke.hidden = !zeigeKarte;
@@ -192,17 +190,27 @@ function ansSetzen(p) {
   B.ansicht(p);
 }
 
-/* ---------- 6. Fotos ---------- */
+/* ---------- 5. Hineingehen: Räume (je Raum der erste Standpunkt aus dem Projekt) ---------- */
 function baueRaeume() {
   const sps = (B.haus && B.haus.standpunkte) || [], gesehen = new Set();
   st.raeume = [];
   for (const s of sps) { const r = s.raum || s.name; if (gesehen.has(r)) continue; gesehen.add(r); st.raeume.push(s); }
+  /* nach Geschoss (von unten nach oben), innerhalb in der Reihenfolge des Projekts */
+  const hoehe = (s) => { const e = B.ebeneVon(s); return e ? e.hoehe : 0; };
+  st.raeume = st.raeume.map((s, i) => ({ s, i })).sort((a, b) => hoehe(a.s) - hoehe(b.s) || a.i - b.i).map((x) => x.s);
+  /* Name ohne Geschoss-Kürzel ("EG Wohnen" → "Wohnen"); kommt ein Name in zwei Geschossen vor, bleibt das Kürzel in der Leiste */
   const kurzName = (s) => { const e = B.ebeneVon(s), r = s.raum || s.name; return e && r.startsWith(e.name + " ") ? r.slice(e.name.length + 1) : r; };
-  $(".fliste").innerHTML = st.raeume.length ? st.raeume.map((s, i) => {
+  const zahl = {}; for (const s of st.raeume) zahl[kurzName(s)] = (zahl[kurzName(s)] || 0) + 1;
+  const leistenName = (s) => (zahl[kurzName(s)] > 1 ? s.raum || s.name : kurzName(s));
+  let html = "", vorher = null;
+  st.raeume.forEach((s, i) => {
     const e = B.ebeneVon(s);
-    return '<button class="frow" type="button" data-a="foto:' + i + '"><span class="th" data-raum="' + esc(s.raum) + '"></span><span class="ft"><b>' + esc(kurzName(s)) + "</b><i>" + esc(e ? e.anzeige : "") + " · Rundum-Blick</i></span>" + IC.vor + "</button>";
-  }).join("") : '<p class="artext">In diesem Haus sind keine Standpunkte gespeichert.</p>';
-  $(".fuss").innerHTML = st.raeume.map((s, i) => '<button class="lk" type="button" data-a="foto:' + i + '"><span>' + esc(kurzName(s)) + "</span></button>").join("");
+    if (e !== vorher) { html += '<div class="zl rk">' + esc(e ? e.anzeige : "") + "</div>"; vorher = e; }
+    html += '<button class="frow" type="button" data-a="raum:' + i + '"><span class="th" data-raum="' + esc(s.raum) + '"></span><span class="ft"><b>' + esc(kurzName(s)) + "</b><i>Hineingehen und umsehen</i></span>" + IC.vor + "</button>";
+  });
+  $(".fliste").innerHTML = st.raeume.length ? html
+    : '<p class="artext">In diesem Haus sind keine Räume gespeichert.</p><button class="gross" type="button" data-a="raum:-1">Im Erdgeschoss hineingehen</button>';
+  $(".fuss").innerHTML = st.raeume.map((s, i) => '<button class="lk" type="button" data-a="raum:' + i + '"><span>' + esc(leistenName(s)) + "</span></button>").join("");
   zeigeFotoVorschau();
 }
 function zeigeFotoVorschau() {
@@ -230,10 +238,12 @@ function fotosImHintergrund() {
   };
   requestAnimationFrame(() => setTimeout(eins, 60));
 }
-function zeigeFoto(i) {
-  const s = st.raeume[i]; if (!s) return;
-  if (st.modus !== "foto") { merkeEbenen(); gehe("foto"); }
-  st.foto = i; B.alleAn(); B.foto(s);
+/** In einen Raum gehen (i = −1: ohne gespeicherte Räume am Startpunkt im EG). Augenhöhe 1,60 m über dem Fußboden seiner Ebene.
+    Drinnen sind alle Ebenen an (wie beim Gehen bisher); beim Zurück kommt der Ebenen-Zustand von vorher wieder. */
+function gehInRaum(i) {
+  const s = i >= 0 ? st.raeume[i] : B.startpunkt(); if (!s) return;
+  if (st.modus !== "innen") { merkeEbenen(); gehe("innen"); B.alleAn(); }
+  st.raum = i; B.innen(s);
   render();
   const b = $$(".fuss .lk")[i]; if (b) try { b.scrollIntoView({ inline: "center", block: "nearest" }); } catch (f) { /* alt */ }
 }
@@ -245,7 +255,7 @@ function zurueckZumModell() {
 }
 async function bildSpeichern() {
   const blob = await B.bildBlob(); if (!blob) { toast("Bild ließ sich nicht erzeugen"); return; }
-  const s = st.raeume[st.foto], name = (st.name + " · " + (s ? s.raum : "Blick")).replace(/[\\/:*?"<>|]+/g, "-") + ".jpg";
+  const s = st.raeume[st.raum], name = (st.name + " · " + (s ? s.raum : "Blick")).replace(/[\\/:*?"<>|]+/g, "-") + ".jpg";
   let datei = null; try { datei = new File([blob], name, { type: "image/jpeg" }); } catch (f) { /* altes Safari */ }
   if (T && datei && navigator.canShare && navigator.canShare({ files: [datei] })) {
     try { await navigator.share({ files: [datei], title: name }); return; } catch (f) { if (f && f.name === "AbortError") return; }
@@ -255,10 +265,7 @@ async function bildSpeichern() {
   toast("Bild gespeichert");
 }
 
-/* ---------- 5. Hineingehen ---------- */
-function hineingehen() {
-  merkeEbenen(); gehe("innen"); B.alleAn(); B.innen(B.startpunkt()); render();
-}
+/* Zielring beim Gehen */
 function zielring(x, y) {
   ring.hidden = false; ring.style.left = x + "px"; ring.style.top = y + "px";
   ring.style.animation = "none"; void ring.offsetWidth; ring.style.animation = "";
@@ -296,7 +303,7 @@ async function oeffne(quelle) {
     zeigeLaden(0.25, "Haus wird entpackt …"); await pause();
     st.sel = null;
     await B.lade(puffer, (a, t) => zeigeLaden(0.2 + a * 0.75, t));
-    st.name = kopf.name; st.usdz = null; st.vorher = null; st.ans = "aussen"; st.foto = 0;
+    st.name = kopf.name; st.usdz = null; st.vorher = null; st.ans = "aussen"; st.raum = -1;
     const jetzt = Date.now();
     let eintrag = quelle.eintrag;
     if (eintrag) { st.fotos = eintrag.fotos || {}; Speicher.ergaenze(eintrag.name, { geoeffnet: jetzt }); }
@@ -402,7 +409,7 @@ app.addEventListener("click", (ev) => {
     case "ans": ansSetzen(p); break;
     case "blatt":
       st.blatt = st.blatt === p ? "" : p; waehleAb();
-      if (st.blatt === "fotos") fotosImHintergrund();
+      if (st.blatt === "raeume") fotosImHintergrund();
       break;
     case "zu": st.blatt = ""; break;
     case "eb": {
@@ -411,9 +418,8 @@ app.addEventListener("click", (ev) => {
       if (st.ans !== "oben") st.ans = B.istOffen() ? "offen" : "aussen";
       break;
     }
-    case "innen": hineingehen(); return;
-    case "draussen": case "zumodell": zurueckZumModell(); return;
-    case "foto": zeigeFoto(+p); return;
+    case "draussen": zurueckZumModell(); return;
+    case "raum": gehInRaum(+p); return;
     case "speichern": bildSpeichern(); return;
     case "hint": st.hint = false; break;
     case "kamera": kamera(b); return;
@@ -473,7 +479,7 @@ document.addEventListener("keydown", (ev) => {
     if (st.blatt) st.blatt = "";
     else if (st.sel) waehleAb();
     else if (!hint.hidden) st.hint = false;
-    else if (st.modus === "foto" || st.modus === "innen") { zurueckZumModell(); return; }
+    else if (st.modus === "innen") { zurueckZumModell(); return; }
     else return;
     render(); return;
   }

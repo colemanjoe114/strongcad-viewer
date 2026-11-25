@@ -95,6 +95,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #cfd8de; ove
 .ft { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 .ft b { font-size: 16px; font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ft i { font-style: normal; font-size: 13px; color: var(--l); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fliste .zl { margin: 10px 6px 4px; }
+.fliste .zl:first-child { margin-top: 2px; }
 .artext { margin: 2px 6px 14px; font-size: 15px; line-height: 1.45; color: var(--t); }
 .gross { width: 100%; height: 50px; border-radius: 25px; background: var(--a); color: var(--as); font-size: 17px; font-weight: 650; transition: transform .12s ease; }
 .gross:active { transform: scale(.98); }
