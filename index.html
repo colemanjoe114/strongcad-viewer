@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>StrongCAD Viewer</title>
+<meta name="description" content="Fertige Häuser aus StrongCAD ansehen, hineingehen, im Raum zeigen.">
+<meta name="theme-color" content="#2f5d46">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="StrongCAD">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="symbol.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="symbol-180.png">
+<link rel="stylesheet" href="stil.css">
+<script type="importmap">{"imports": {
+  "three": "./lib/three/build/three.module.js",
+  "three/addons/": "./lib/three/examples/jsm/",
+  "three-mesh-bvh": "./lib/three-mesh-bvh/build/index.module.js"
+}}</script>
+</head>
+<body>
+<div class="app" id="app"></div>
+<noscript>Der StrongCAD Viewer braucht JavaScript.</noscript>
+<script type="module" src="app.js"></script>
+</body>
+</html>
